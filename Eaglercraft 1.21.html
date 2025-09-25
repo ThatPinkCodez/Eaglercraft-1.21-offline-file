@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Eaglercraft 1.21</title>
+<link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/en/5/51/Minecraft_icon.png">
+<style>
+:root{ --green:#00ff6a; --muted:#0b0b0b; }
+html,body{ height:100%; margin:0; background:#000; font-family:"Roboto Mono","Courier New",monospace; color:var(--green); overflow:hidden; }
+#bg { position:fixed; inset:0; z-index:1; background: radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.9) 60%), #000; }
+#stage { position:fixed; inset:0; z-index:2; pointer-events:none; }
+.popup { position:absolute; width:420px; height:180px; background: linear-gradient(180deg,#111,#050505); border:2px solid rgba(0,255,106,0.08); box-shadow:0 8px 40px rgba(0,0,0,0.6); padding:16px; color:#e6f8ea; font-size:14px; pointer-events:auto; display:flex; flex-direction:column; gap:8px; transform:translate3d(0,0,0); }
+.popup .title { font-weight:700; color:#ffd1d1; }
+.popup .body { color:#ddd; font-size:13px; flex:1; overflow:auto; }
+.btn { align-self:flex-end; padding:6px 10px; background:#222; border:1px solid rgba(255,255,255,0.04); color:#fff; cursor:pointer; }
+#console { position:fixed; left:24px; bottom:24px; width:55vw; height:46vh; background: rgba(0,0,0,0.55); border:1px solid rgba(0,255,106,0.06); padding:12px; overflow:auto; z-index:3; pointer-events:none; box-shadow:0 10px 60px rgba(0,0,0,0.7); }
+#console pre{ margin:0; line-height:1.2; font-size:13px; color:var(--green); }
+#startOverlay { position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.85)); color:#fff; text-align:center; padding:24px; }
+#startOverlay .card { background:linear-gradient(180deg,#0b0b0b,#070707); padding:28px; border-radius:12px; width:min(720px,92vw); box-shadow:0 30px 80px rgba(0,0,0,0.8); }
+.muted { color:#a9a9a9; font-size:14px; margin-top:6px; }
+#fakeBSOD { position:fixed; inset:0; z-index:20; display:none; background: linear-gradient(180deg,#00148a,#000a40); color:#fff; text-align:center; padding-top:14vh; font-family:"Segoe UI", Roboto, sans-serif; }
+#fakeBSOD h1{ font-size:40px; margin:0 0 20px; letter-spacing:1px; }
+#fakeBSOD p{ font-size:18px; margin:6px 0; color:#dfe9ff; }
+.hidden{ display:none !important; }
+.glitch { animation: glitchShift 120ms steps(2,end) infinite; }
+@keyframes glitchShift { 0%{filter:none;transform:translateX(0);}50%{filter:hue-rotate(10deg) blur(0.8px);transform:translateX(-3px) skewX(1deg);}100%{filter:none;transform:translateX(0);} }
+.progressBox { width:100%; height:12px; background:#121212; border-radius:6px; overflow:hidden; margin-top:8px; }
+.progressBar { height:100%; width:0%; background: linear-gradient(90deg,#ff5b5b,#ffa04d); transition: width 0.2s linear; }
+#jumpscare { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center; background:#fff; }
+#jumpscare svg { width:80vmin; height:80vmin; pointer-events:none; }
+#jumpscare .screamText { position:absolute; bottom:8vh; left:50%; transform:translateX(-50%); font-size:6vmin; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,0.8); font-weight:900; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="stage"></div>
+<div id="console"><pre id="log"></pre></div>
+
+<div id="fakeBSOD" role="alert" aria-live="assertive">
+  <h1>:(</h1>
+  <p>Your device ran into a problem and needs to restart.</p>
+  <p>COLLAPSE.EXE — CRITICAL ERROR</p>
+  <p id="bsodDetail">Collecting crash data: 0%</p>
+</div>
+
+<div id="jumpscare" aria-hidden="true">
+<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+<defs>
+<radialGradient id="g1" cx="50%" cy="40%" r="70%">
+<stop offset="0%" stop-color="#ff6666"/>
+<stop offset="50%" stop-color="#b40000"/>
+<stop offset="100%" stop-color="#2b0000"/>
+</radialGradient>
+<filter id="f1" x="-20%" y="-20%" width="140%" height="140%">
+<feGaussianBlur stdDeviation="1.8" result="b" />
+<feComposite in="SourceGraphic" in2="b" operator="over"/>
+</filter>
+</defs>
+<rect width="100%" height="100%" fill="url(#g1)"/>
+<g transform="translate(0,0)">
+<ellipse cx="60" cy="70" rx="20" ry="30" fill="#fff" />
+<ellipse cx="140" cy="70" rx="20" ry="30" fill="#fff" />
+<circle cx="60" cy="80" r="8" fill="#000"/>
+<circle cx="140" cy="80" r="8" fill="#000"/>
+</g>
+<path d="M40,140 C70,180 130,180 160,140 C140,176 60,176 40,140 Z" fill="#000" filter="url(#f1)"/>
+<polygon points="90,140 95,156 85,156" fill="#fff"/>
+<polygon points="110,140 115,156 105,156" fill="#fff"/>
+<path d="M20,30 L60,80" stroke="#3b0000" stroke-width="2" stroke-linecap="round"/>
+<path d="M180,30 L140,80" stroke="#3b0000" stroke-width="2" stroke-linecap="round"/>
+</svg>
+<div class="screamText">SYSTEM FAILURE</div>
+</div>
+
+<div id="startOverlay">
+<div class="card">
+<h2 style="margin:0 0 12px">Launch Eaglercraft 1.21</h2>
+<div class="muted">This version is still in development so it might have some bugs</div>
+<div style="height:18px"></div>
+<button id="startBtn" class="btn" style="pointer-events:auto; margin-top:14px;">Launch 1.21</button>
+<div style="height:6px"></div>
+<a href="https://youtube.com/@ThatPink_Dude" target="_blank">Subscribe to ThatPink_Dude</a>
+</div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const log = document.getElementById('log');
+const startBtn = document.getElementById('startBtn');
+const startOverlay = document.getElementById('startOverlay');
+const fakeBSOD = document.getElementById('fakeBSOD');
+const bsodDetail = document.getElementById('bsodDetail');
+const jumpscareEl = document.getElementById('jumpscare');
+let audioCtx = null, masterGain = null;
+
+function appendConsoleLine(text, speed=6, cb){
+  let i=0;
+  const line = document.createElement('span');
+  log.appendChild(line);
+  const id = setInterval(()=>{
+    line.textContent += text[i] || '';
+    i++;
+    if(i >= text.length){
+      clearInterval(id);
+      log.appendChild(document.createTextNode('\n'));
+      log.parentElement.scrollTop = log.parentElement.scrollHeight;
+      if(cb) setTimeout(cb, 120);
+    }
+  }, speed);
+}
+
+function spawnPopup(x,y,title,body){
+  const p = document.createElement('div');
+  p.className='popup';
+  p.style.left = Math.max(12, Math.min(window.innerWidth - 440, x)) + 'px';
+  p.style.top = Math.max(12, Math.min(window.innerHeight - 200, y)) + 'px';
+  p.innerHTML = `<div class="title">${title}</div><div class="body">${body}</div><div style="display:flex; gap:8px;"><button class="btn close">Close</button><button class="btn force">Force</button></div>`;
+  stage.appendChild(p);
+  p.querySelector('.close').onclick = ()=> p.remove();
+  p.querySelector('.force').onclick = ()=> {
+    p.querySelector('.body').textContent = 'FORCING ACCESS... (simulated)';
+    p.animate([{ transform:'scale(1)'}, { transform:'scale(0.98)'}], {duration:120, iterations:6});
+  };
+  return p;
+}
+
+function spawnProgressPopup(x,y, label){
+  const p = spawnPopup(x,y, label, `<div style="font-size:13px">Initializing...<div class="progressBox"><div class="progressBar"></div></div></div>`);
+  const bar = p.querySelector('.progressBar');
+  let w = 0;
+  const t = setInterval(()=>{
+    w += 5 + Math.random()*18;
+    bar.style.width = Math.min(100, w) + '%';
+    if(w >= 100){
+      clearInterval(t);
+      p.querySelector('.body').textContent = 'Completed: 100%';
+      setTimeout(()=> p.remove(), 1600);
+    }
+  }, 200);
+}
+
+function initAudio(){
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(audioCtx.destination);
+  }catch(e){ audioCtx = null; }
+}
+
+function beep(freq=800, duration=0.08, type='saw'){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = 0.0001;
+  o.connect(g);
+  g.connect(masterGain);
+  o.start();
+  const now = audioCtx.currentTime;
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  o.stop(now + duration + 0.02);
+}
+
+function rumble(duration=600){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'triangle';
+  o.frequency.value = 60 + Math.random()*40;
+  g.gain.value = 0.0001;
+  o.connect(g);
+  g.connect(masterGain);
+  o.start();
+  const now = audioCtx.currentTime;
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.linearRampToValueAtTime(0.15, now + 0.05);
+  g.gain.linearRampToValueAtTime(0.0001, now + duration/1000);
+  o.stop(now + duration/1000 + 0.1);
+}
+
+function playScream(duration=0.65, volume=1.3){
+  if(!audioCtx) return;
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    const env = Math.exp(-3 * (i / bufferSize));
+    data[i] = (Math.random()*2 - 1) * env;
+  }
+  const node = audioCtx.createBufferSource();
+  node.buffer = buffer;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  node.connect(g);
+  g.connect(masterGain);
+  g.gain.linearRampToValueAtTime(0.9 * volume, audioCtx.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  node.start();
+  node.stop(audioCtx.currentTime + duration + 0.05);
+  const o = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  o.type = 'saw';
+  o.frequency.value = 1100 + Math.random()*600;
+  og.gain.value = 0.0001;
+  o.connect(og);
+  og.connect(masterGain);
+  o.start();
+  og.gain.linearRampToValueAtTime(0.8 * volume, audioCtx.currentTime + 0.01);
+  og.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration * 0.9);
+  o.stop(audioCtx.currentTime + duration);
+}
+
+function buzzDevice(ms=250){
+  if(navigator.vibrate) navigator.vibrate([50, 80, 70, 40, 60]);
+}
+
+function flashScreen(times=4){
+  let i=0;
+  const id = setInterval(()=>{
+    document.body.style.filter = (i%2===0) ? 'brightness(3) saturate(1.4)' : '';
+    i++;
+    if(i>times){ clearInterval(id); document.body.style.filter=''; }
+  }, 90);
+}
+
+function doJumpscare(){
+  jumpscareEl.style.display = 'flex';
+  jumpscareEl.style.background = '#fff';
+  jumpscareEl.style.opacity = '1';
+  jumpscareEl.style.transition = 'none';
+  flashScreen(6);
+  playScream(0.8, 1.4);
+  buzzDevice();
+  jumpscareEl.animate([{ transform: 'scale(0.9)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], { duration: 800, easing:'cubic-bezier(.2,.8,.2,1)' });
+  setTimeout(()=> {
+    jumpscareEl.style.transition = 'opacity 0.3s ease';
+    jumpscareEl.style.opacity = '0';
+    setTimeout(()=> jumpscareEl.style.display = 'none', 350);
+  }, 900);
+}
+
+function requestAndSpamNotifications(){
+  if(!("Notification" in window)) return;
+  Notification.requestPermission().then(permission => {
+    if(permission === 'granted'){
+      let count=0;
+      const nid = setInterval(()=>{
+        try{
+          new Notification("SYSTEM ALERT", { body: `Critical activity detected — item ${count+1}`, renotify:true });
+        }catch(e){}
+        count++;
+        if(count>=45) clearInterval(nid);
+      }, 700);
+      const spamInterval = setInterval(()=>{ spawnPopup(Math.random()*(window.innerWidth-480), Math.random()*(window.innerHeight-240), "Alert", "Notification triggered: check system logs."); }, 900);
+      setTimeout(()=> clearInterval(spamInterval), 16000);
+    }
+  });
+}
+
+function flickerScreen(times=10){
+  let i=0;
+  const id = setInterval(()=>{
+    document.body.style.filter = (i%2===0) ? 'opacity(0.92) saturate(1.3) contrast(1.05)' : 'brightness(0.8) contrast(1.05)';
+    i++;
+    if(i>times) { clearInterval(id); document.body.style.filter=''; }
+  }, 80);
+}
+
+function triggerBSOD(){
+  rumble(1600);
+  fakeBSOD.style.display = 'block';
+  let pct = 0;
+  const c = setInterval(()=>{
+    pct += Math.floor(4 + Math.random()*12);
+    if(pct>=100) pct = 100;
+    bsodDetail.textContent = `Collecting crash data: ${pct}%`;
+    if(pct >= 100){
+      clearInterval(c);
+      setTimeout(()=>{
+        try{ doJumpscare(); }catch(e){}
+        setTimeout(()=>{
+          flashScreen(8);
+          setTimeout(()=>{
+            fakeBSOD.style.transition = 'opacity 1.2s ease';
+            fakeBSOD.style.opacity = '0';
+            setTimeout(()=>{
+              document.documentElement.style.background = '#000';
+              document.body.innerHTML = '<div style="width:100vw;height:100vh;background:#000;display:flex;align-items:center;justify-content:center;color:#111"><div style="text-align:center"><h2 style="color:#111">SYSTEM OFFLINE</h2><p style="color:#111">Power removed (simulated). Close tab to exit.</p></div></div>';
+            }, 1200);
+          }, 800);
+        }, 900);
+      }, 600);
+    }
+  }, 260);
+}
+
+function spamPopups(){
+  const texts = [
+    ["Security Alert","Unauthorized access detected. GPU mining initiated."],
+    ["Privacy","Camera enabled by UNKNOWN_PROCESS. Capturing frames..."],
+    ["Network","Outgoing connections to 34.87.112.9 established."],
+    ["Files","Encrypting C:\\Users\\You\\Documents..."],
+    ["System","Overriding power management."]
+  ];
+  for(let i=0;i<6;i++){
+    const t = texts[Math.floor(Math.random()*texts.length)];
+    const x = Math.random()*(window.innerWidth - 480);
+    const y = Math.random()*(window.innerHeight - 240);
+    setTimeout(()=> spawnPopup(x,y,t[0],t[1]), 800 + i*700);
+  }
+}
+
+function startSequence(){
+  startOverlay.classList.add('hidden');
+  document.documentElement.requestFullscreen?.().catch(()=>{});
+  initAudio();
+  appendConsoleLine('[INIT] Security module starting...');
+  setTimeout(()=> appendConsoleLine('[PROC] Checking system integrity...'), 200);
+  setTimeout(()=> appendConsoleLine('[ALERT] Suspicious process detected: svchost32_x86'), 800);
+  setTimeout(()=> appendConsoleLine('[ALERT] Privilege escalation attempt...'), 1400);
+  setTimeout(()=> {beep(1200,0.07,'sine'); appendConsoleLine('[ALERT] Attempting to isolate process...');}, 1700);
+  setTimeout(()=> {beep(1600,0.06,'square'); appendConsoleLine('[WARN] Isolation failed — process detached.');}, 2400);
+  setTimeout(()=> spawnProgressPopup(80,80,'Encrypting C:\\Users\\You\\Documents'), 2600);
+  setTimeout(()=> spawnProgressPopup(400,140,'Exfiltrating credentials (simulated)'), 3200);
+  setTimeout(()=> spamPopups(), 3600);
+  setTimeout(()=> requestAndSpamNotifications(), 4200);
+  setTimeout(()=> {
+    appendConsoleLine('[INTRUSION] Lateral movement detected...');
+    appendConsoleLine('[INTRUSION] Dropping payload...');
+    appendConsoleLine('[SYSTEM] Overriding display drivers...');
+    beep(400,0.15,'saw'); beep(700,0.09,'square');
+  }, 5600);
+  setTimeout(()=> {
+    flickerScreen(12);
+    for(let i=0;i<10;i++){
+      setTimeout(()=> spawnPopup(Math.random()*(window.innerWidth-480), Math.random()*(window.innerHeight-240), 'Critical', 'Driver failure — GPU locked.'), i*220);
+    }
+    rumble(1000);
+  }, 7600);
+  setTimeout(()=> {
+    for(let i=0;i<6;i++){
+      setTimeout(()=> beep(300 + Math.random()*1200, 0.06, ['sine','triangle'][i%2]), i*120);
+    }
+    appendConsoleLine('[SYSTEM] Kernel integrity compromised.');
+  }, 9800);
+  setTimeout(()=> { triggerBSOD(); }, 12000);
+}
+
+startBtn.addEventListener('click', ()=>{
+  initAudio();
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  startSequence();
+});
+
+window.addEventListener('resize', ()=> {
+  document.querySelectorAll('.popup').forEach(p=>{
+    const left = parseFloat(p.style.left || 0), top = parseFloat(p.style.top || 0);
+    p.style.left = Math.max(6, Math.min(window.innerWidth - 460, left)) + 'px';
+    p.style.top = Math.max(6, Math.min(window.innerHeight - 220, top)) + 'px';
+  });
+});
+</script>
+</body>
+</html>
